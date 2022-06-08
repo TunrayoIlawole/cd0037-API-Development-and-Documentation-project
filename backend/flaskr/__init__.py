@@ -9,6 +9,7 @@ from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
 
+
 def paginate_questions(request, data):
     # Get the page parameter from the request url
     page = request.args.get("page", 1, type=int)
@@ -19,6 +20,7 @@ def paginate_questions(request, data):
     current_questions = questions[start:end]
 
     return current_questions
+
 
 def create_app(test_config=None):
     # create and configure the app
@@ -47,7 +49,7 @@ def create_app(test_config=None):
 
         if len(categories) == 0:
             abort(404)
-        
+
         return jsonify(
             {
                 "success": True,
@@ -78,8 +80,8 @@ def create_app(test_config=None):
         return jsonify({
             "success": True,
             "questions": current_questions,
-           "total_questions": len(Question.query.all()), 
-           "categories": {
+            "total_questions": len(Question.query.all()),
+            "categories": {
                 category.id: category.type for category in categories
             },
             "current_category": None,
@@ -92,7 +94,8 @@ def create_app(test_config=None):
     def delete_question(question_id):
         try:
             # Get the question whose id matches that of the question to be deleted
-            question = Question.query.filter(Question.id == question_id).one_or_none()
+            question = Question.query.filter(
+                Question.id == question_id).one_or_none()
 
             # If the question does not exist:
             if question is None:
@@ -111,7 +114,7 @@ def create_app(test_config=None):
                     "questions": current_questions,
                     "total_questions": len(Question.query.all())
                 }
-            )  
+            )
 
         except:
             abort(422)
@@ -132,7 +135,8 @@ def create_app(test_config=None):
 
         try:
             # Create a new question from the data gotten from the request
-            question = Question(question=new_question, answer=new_answer, category=new_category, difficulty=new_difficulty)
+            question = Question(question=new_question, answer=new_answer,
+                                category=new_category, difficulty=new_difficulty)
             question.insert()
 
             data = Question.query.order_by(Question.id).all()
@@ -158,7 +162,8 @@ def create_app(test_config=None):
 
         if search_term:
             # Get all the questions that match the search term (case-insensitive)
-            results = Question.query.filter(Question.question.ilike(f'%{search_term}%')).all()
+            results = Question.query.filter(
+                Question.question.ilike(f'%{search_term}%')).all()
 
             return jsonify({
                 "success": True,
@@ -166,7 +171,7 @@ def create_app(test_config=None):
                 "total_questions": len(results),
                 "current_category": None
             })
-        
+
         abort(404)
 
     """
@@ -175,11 +180,12 @@ def create_app(test_config=None):
     @app.route("/categories/<int:category_id>/questions")
     def retrieve_questions_by_category(category_id):
         # Get the questions whose categories are equal to the specified category
-        questions = Question.query.filter(Question.category == category_id).all()
+        questions = Question.query.filter(
+            Question.category == category_id).all()
 
         if len(questions) == 0:
             abort(404)
-        
+
         return jsonify({
             "success": True,
             "questions": [question.format() for question in questions],
@@ -204,14 +210,19 @@ def create_app(test_config=None):
             category = body.get('quiz_category')
             previous_questions = body.get('previous_questions')
 
-            # Get the questions that are not in previous_questions i.e have not been asked already and whose category match the category from the request
-            available_questions = Question.query.filter_by(category=category['id']).filter(
-            Question.id.notin_(previous_questions)
-            ).all()
+            # If the category is all:
+            if category['id'] == 0:
+                available_questions = Question.query.filter(
+                    Question.id.notin_(previous_questions)).all()
+            else:
+                # Get the questions that are not in previous_questions i.e have not been asked already and whose category match the category from the request
+                available_questions = Question.query.filter_by(category=category['id']).filter(
+                    Question.id.notin_(previous_questions)
+                ).all()
 
             if len(available_questions) > 0:
                 current_question = available_questions[random.randrange(
-                0, len(available_questions))].format()
+                    0, len(available_questions))].format()
             else:
                 current_question = None
 
@@ -219,11 +230,10 @@ def create_app(test_config=None):
                 "success": True,
                 "question": current_question
             })
-            
 
         except BaseException:
             abort(422)
-    
+
     """
     Create error handlers for all expected errors
     including 404 and 422.
@@ -261,4 +271,3 @@ def create_app(test_config=None):
             422
         )
     return app
-
