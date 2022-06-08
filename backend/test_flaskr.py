@@ -34,11 +34,10 @@ class TriviaTestCase(unittest.TestCase):
             self.db.init_app(self.app)
             # create all tables
             self.db.create_all()
-    
+
     def tearDown(self):
         """Executed after reach test"""
         pass
-
 
     def test_get_categories(self):
         res = self.client().get('/categories')
@@ -84,7 +83,6 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data["questions"])
         self.assertTrue(data["current_category"])
 
-
     def test_404_get_questions_by_category(self):
         res = self.client().get('/categories/1000/questions')
         data = json.loads(res.data)
@@ -94,14 +92,16 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["message"], "Resource not found")
 
     def test_delete_question(self):
-        test_question = Question(question='a question', answer='an answer', difficulty=1, category=4)
+        test_question = Question(
+            question='a question', answer='an answer', difficulty=1, category=4)
 
         test_question.insert()
 
         res = self.client().delete('/questions/{}'.format(test_question.id))
         data = json.loads(res.data)
 
-        question = Question.query.filter(Question.id == test_question.id).one_or_none()
+        question = Question.query.filter(
+            Question.id == test_question.id).one_or_none()
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
@@ -121,7 +121,6 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(res.data)
         pass
 
-
     def test_422_create_new_question(self):
         res = self.client().post('/questions', json=self.new_question)
         data = json.loads(res.data)
@@ -136,7 +135,6 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["success"], True)
         self.assertTrue(data["questions"])
         self.assertTrue(data["total_questions"])
-
 
     def test_404_search_questions(self):
         wrong_search = {'searchTerm': ''}
@@ -174,8 +172,8 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 422)
-        self.assertEqual(data["success"], False)    
-        self.assertEqual(data["message"], "Request was unprocessable")    
+        self.assertEqual(data["success"], False)
+        self.assertEqual(data["message"], "Request was unprocessable")
 
 
 # Make the tests conveniently executable
