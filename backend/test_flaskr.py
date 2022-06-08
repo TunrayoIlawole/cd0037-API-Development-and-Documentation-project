@@ -38,10 +38,7 @@ class TriviaTestCase(unittest.TestCase):
         """Executed after reach test"""
         pass
 
-    """
-    TODO
-    Write at least one test for each test for successful operation and for expected errors.
-    """
+
     def test_get_categories(self):
         res = self.client().get('/categories')
         data = json.loads(res.data)
@@ -96,18 +93,22 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["message"], "Resource not found")
 
     def test_delete_question(self):
-        res = self.client().delete('/questions/1')
+        test_question = Question(question='a question', answer='an answer', difficulty=1, category=4)
+
+        test_question.insert()
+
+        res = self.client().delete('/questions/{}'.format(test_question.id))
         data = json.loads(res.data)
 
-        question = Question.query.filter(Question.id == 1).one_or_none()
+        question = Question.query.filter(Question.id == test_question.id).one_or_none()
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
-        self.assertEqual(data["deleted"], 1)
+        self.assertEqual(data["deleted"], test_question.id)
         self.assertEqual(question, None)
 
     def test_422_question_does_not_exist(self):
-        res = self.client().get('/questions/100000')
+        res = self.client().delete('/questions/1000')
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 422)
@@ -149,8 +150,8 @@ class TriviaTestCase(unittest.TestCase):
         quiz_data = {
             'previous_questions': [],
             'quiz_category': {
-                'type': 'Art',
-                'id': 5
+                'type': 'History',
+                'id': 4
             }
         }
 
@@ -163,8 +164,8 @@ class TriviaTestCase(unittest.TestCase):
     def test_422_play_quiz(self):
         quiz_data = {
             'quiz_category': {
-                'type': 'Art',
-                'id': 5
+                'type': 'History',
+                'id': 4
             }
         }
 
@@ -172,7 +173,7 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 422)
-        self.assertEqual(data["success"], True)    
+        self.assertEqual(data["success"], False)    
         self.assertEqual(data["message"], "Request was unprocessable")    
 
 
