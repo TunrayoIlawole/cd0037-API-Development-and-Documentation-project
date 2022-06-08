@@ -20,6 +20,7 @@ class TriviaTestCase(unittest.TestCase):
         )
         setup_db(self.app, self.database_path)
 
+        # Create a test question
         self.new_question = {
             "question": "What is a baby rabbit called?",
             "answer": "Kitten",
@@ -127,7 +128,7 @@ class TriviaTestCase(unittest.TestCase):
         pass
 
     def test_search_questions(self):
-        search = {'search_term': 'title'}
+        search = {'searchTerm': 'title'}
         res = self.client().post('/questions/search', json=search)
         data = json.loads(res.data)
 
@@ -138,7 +139,7 @@ class TriviaTestCase(unittest.TestCase):
 
 
     def test_404_search_questions(self):
-        wrong_search = {'search_term': ''}
+        wrong_search = {'searchTerm': ''}
         res = self.client().post('/questions/search', json=wrong_search)
         data = json.loads(res.data)
 

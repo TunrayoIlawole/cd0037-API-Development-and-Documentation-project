@@ -10,6 +10,7 @@ from models import setup_db, Question, Category
 QUESTIONS_PER_PAGE = 10
 
 def paginate_questions(request, data):
+    # Get the page parameter from the request url
     page = request.args.get("page", 1, type=int)
     start = (page - 1) * QUESTIONS_PER_PAGE
     end = start + QUESTIONS_PER_PAGE
@@ -41,6 +42,7 @@ def create_app(test_config=None):
     """
     @app.route("/categories")
     def retrieve_categories():
+        # Get all the categories
         categories = Category.query.order_by(Category.type).all()
 
         if len(categories) == 0:
@@ -62,7 +64,10 @@ def create_app(test_config=None):
     """
     @app.route("/questions")
     def retrieve_questions():
+        # Get all the questions
         data = Question.query.order_by(Question.id).all()
+
+        # Get 10 questions per page
         current_questions = paginate_questions(request, data)
 
         categories = Category.query.order_by(Category.type).all()
@@ -74,6 +79,9 @@ def create_app(test_config=None):
             "success": True,
             "questions": current_questions,
            "total_questions": len(Question.query.all()), 
+           "categories": {
+                category.id: category.type for category in categories
+            },
             "current_category": None,
         })
 
@@ -83,13 +91,16 @@ def create_app(test_config=None):
     @app.route("/questions/<int:question_id>", methods=["DELETE"])
     def delete_question(question_id):
         try:
+            # Get the question whose id matches that of the question to be deleted
             question = Question.query.filter(Question.id == question_id).one_or_none()
 
+            # If the question does not exist:
             if question is None:
                 abort(404)
 
             question.delete()
 
+            # Get the remaining questions
             data = Question.query.order_by(Question.id).all()
             current_questions = paginate_questions(request, data)
 
@@ -111,6 +122,7 @@ def create_app(test_config=None):
     """
     @app.route("/questions", methods=["POST"])
     def create_question():
+        # Get the json request data
         body = request.get_json()
 
         new_question = body.get("question", None)
@@ -119,6 +131,7 @@ def create_app(test_config=None):
         new_category = body.get("category", None)
 
         try:
+            # Create a new question from the data gotten from the request
             question = Question(question=new_question, answer=new_answer, category=new_category, difficulty=new_difficulty)
             question.insert()
 
@@ -140,15 +153,18 @@ def create_app(test_config=None):
     """
     @app.route("/questions/search", methods=["POST"])
     def search_questions():
-        search_term = request.get_json().get('search_term')
+        # Get the search term from the json request data
+        search_term = request.get_json().get('searchTerm')
 
         if search_term:
+            # Get all the questions that match the search term (case-insensitive)
             results = Question.query.filter(Question.question.ilike(f'%{search_term}%')).all()
 
             return jsonify({
                 "success": True,
                 "questions": [result.format() for result in results],
                 "total_questions": len(results),
+                "current_category": None
             })
         
         abort(404)
@@ -158,6 +174,7 @@ def create_app(test_config=None):
     """
     @app.route("/categories/<int:category_id>/questions")
     def retrieve_questions_by_category(category_id):
+        # Get the questions whose categories are equal to the specified category
         questions = Question.query.filter(Question.category == category_id).all()
 
         if len(questions) == 0:
@@ -187,13 +204,16 @@ def create_app(test_config=None):
             category = body.get('quiz_category')
             previous_questions = body.get('previous_questions')
 
+            # Get the questions that are not in previous_questions i.e have not been asked already and whose category match the category from the request
             available_questions = Question.query.filter_by(category=category['id']).filter(
             Question.id.notin_(previous_questions)
             ).all()
 
-            current_question = available_questions[random.randrange(
-                0, len(available_questions))].format() if \
-                len(available_questions) > 0 else None
+            if len(available_questions) > 0:
+                current_question = available_questions[random.randrange(
+                0, len(available_questions))].format()
+            else:
+                current_question = None
 
             return jsonify({
                 "success": True,
@@ -240,17 +260,5 @@ def create_app(test_config=None):
             }),
             422
         )
-
-    # @app.errorhandler(405)
-    # def not_allowed(error):
-    #     return (
-    #         jsonify({
-    #             "success": False,
-    #             "error": 405,
-    #             "message": "Method not allowed"
-    #         }),
-    #         405
-    #     )
-
     return app
 
