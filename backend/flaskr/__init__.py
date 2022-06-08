@@ -23,12 +23,11 @@ def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     setup_db(app)
-    CORS(app)
 
     """
     @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
     """
-
+    CORS(app)
     """
     @TODO: Use the after_request decorator to set Access-Control-Allow
     """
@@ -177,15 +176,16 @@ def create_app(test_config=None):
         search_term = request.get_json().get('search_term')
 
         if search_term:
-            results = Question.query().filter(Question.question.ilike(f'%{search_term}%')).all()
+            results = Question.query.filter(Question.question.ilike(f'%{search_term}%')).all()
 
             return jsonify({
                 "success": True,
                 "questions": [result.format() for result in results],
-                "total_questions": len(results)
+                "total_questions": len(results),
+                "current_category": None
             })
-        else:
-            abort(404)
+        
+        abort(404)
 
     """
     @TODO:
@@ -220,10 +220,32 @@ def create_app(test_config=None):
     one question at a time is displayed, the user is allowed to answer
     and shown whether they were correct or not.
     """
-    @app.route("/quizzes/category", methods=["POST"])
+    @app.route("/quizzes", methods=["POST"])
     def start_quiz():
         try:
             body = request.get_json()
+
+            if not 'quiz_category' in body and not 'previous_questions' in body:
+                abort(422)
+
+            category = body.get('quiz_category')
+            previous_questions = body.get('previous_questions')
+
+            available_questions = Question.query.filter_by(category=category['id']).filter(
+                Question.id.notin_(previous_questions)
+            ).all()
+
+            if len(available_questions) > 0:
+                current_question  = available_questions[random.randrange(0, len(available_questions))].format()
+            else:
+                current_question = None
+
+            return jsonify({
+                "success": True,
+                "question": current_question
+            })
+            
+
         except:
             abort(422)
     """
@@ -264,16 +286,16 @@ def create_app(test_config=None):
             422
         )
 
-    @app.errorhandler(405)
-    def not_allowed(error):
-        return (
-            jsonify({
-                "success": False,
-                "error": 405,
-                "message": "Method not allowed"
-            }),
-            405
-        )
+    # @app.errorhandler(405)
+    # def not_allowed(error):
+    #     return (
+    #         jsonify({
+    #             "success": False,
+    #             "error": 405,
+    #             "message": "Method not allowed"
+    #         }),
+    #         405
+    #     )
 
     return app
 
