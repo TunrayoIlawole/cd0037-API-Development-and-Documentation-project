@@ -21,6 +21,9 @@ def paginate_questions(request, data):
 
     return current_questions
 
+def randomize(start, end):
+    return random.randrange(start, end)
+
 
 def create_app(test_config=None):
     # create and configure the app
@@ -202,29 +205,29 @@ def create_app(test_config=None):
     @app.route("/quizzes", methods=["POST"])
     def start_quiz():
         try:
-            body = request.get_json()
-
-            if not 'quiz_category' in body and not 'previous_questions' in body:
+            if not 'quiz_category' in request.get_json() and not 'previous_questions' in request.get_json():
                 abort(422)
 
-            category = body.get('quiz_category')
-            previous_questions = body.get('previous_questions')
+            category = request.get_json().get('quiz_category')
+            quiz_category_id = category['id']
+            asked_questions = request.get_json().get('previous_questions')
 
             # If the category is all:
-            if category['id'] == 0:
-                available_questions = Question.query.filter(
-                    Question.id.notin_(previous_questions)).all()
+            if quiz_category_id == 0:
+                free_questions = Question.query.filter(
+                    Question.id.notin_(asked_questions)).all()
             else:
-                # Get the questions that are not in previous_questions i.e have not been asked already and whose category match the category from the request
-                available_questions = Question.query.filter_by(category=category['id']).filter(
-                    Question.id.notin_(previous_questions)
+            # Get the questions that are not in previous_questions i.e have not been asked already and whose category match the category from the request
+                free_questions = Question.query.filter_by(category=quiz_category_id).filter(
+                    Question.id.notin_(asked_questions)
                 ).all()
 
-            if len(available_questions) > 0:
-                current_question = available_questions[random.randrange(
-                    0, len(available_questions))].format()
-            else:
+            num_questions = len(free_questions)
+            if num_questions < 0:
                 current_question = None
+            else:
+                current_question = free_questions[randomize(
+                    0, num_questions)].format()
 
             return jsonify({
                 "success": True,
